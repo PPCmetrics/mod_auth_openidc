@@ -1376,6 +1376,12 @@ static int oidc_check_mixed_userid_oauth(request_rec *r, oidc_cfg_t *c) {
 	const char *access_token = NULL;
 	if (oidc_oauth_get_bearer_token(r, &access_token) == TRUE) {
 
+		/* MS-OFBA native integration */
+		if (oidc_is_ofba_capable_request(r)) {
+				r->ap_auth_type = apr_pstrdup(r->pool, OIDC_AUTH_TYPE_OPENID_CONNECT);
+				return oidc_check_userid_openidc(r, c);
+		}
+
 		r->ap_auth_type = apr_pstrdup(r->pool, OIDC_AUTH_TYPE_OPENID_OAUTH20);
 		return oidc_oauth_check_userid(r, c, access_token);
 	}
