@@ -69,6 +69,7 @@
 #endif
 
 #include <apr_portable.h>
+#include <apr_escape.h>
 
 /*
  * clean any suspicious headers in the HTTP request sent by the user agent
@@ -528,7 +529,7 @@ static int oidc_handle_unauthenticated_user(request_rec *r, oidc_cfg_t *c) {
 							* and point it to the login hook.
 							*/
 						const char *return_url = oidc_util_url_abs(r, c, "/login_success/");
-						const char *request_url = apr_pstrcat(r->pool, oidc_util_url_abs(r, c, "/dologin/"), "?version=1.0&action=signin&returnurl=", ap_escape_urlencoded(r->pool, return_url), NULL);
+						const char *request_url = apr_pstrcat(r->pool, oidc_util_url_abs(r, c, "/dologin/"), "?version=1.0&action=signin&returnurl=", apr_pescape_urlencoded(r->pool, return_url), NULL);
 
 						apr_table_set(r->err_headers_out, "X-FORMS_BASED_AUTH_REQUIRED", request_url);
 						apr_table_set(r->err_headers_out, "X-FORMS_BASED_AUTH_RETURN_URL", return_url);
