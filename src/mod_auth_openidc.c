@@ -1386,7 +1386,7 @@ static int oidc_check_mixed_userid_oauth(request_rec *r, oidc_cfg_t *c) {
 		return oidc_oauth_check_userid(r, c, access_token);
 	}
 
-	if (r->method_number == M_OPTIONS) {
+        if (r->method_number == M_OPTIONS && !oidc_is_ofba_capable_request(r)) {
 		r->user = "";
 		return OK;
 	}
