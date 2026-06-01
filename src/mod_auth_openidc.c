@@ -514,39 +514,40 @@ static int oidc_handle_unauthenticated_user(request_rec *r, oidc_cfg_t *c) {
 
 		return OK;
 
-        case OIDC_UNAUTH_AUTHENTICATE:
+	case OIDC_UNAUTH_AUTHENTICATE:
 
-                /* MS-OFBA native integration */
-                if (oidc_is_ofba_capable_request(r)) {
-                        if (r->args != NULL && strstr(r->args, "ofba=login") != NULL) {
-                                /* This is the embedded browser accessing the login trigger URL;
-                                 * allow it to fall through to oidc_request_authenticate_user
-                                 */
-                        } else {
-                                /* Unauthenticated request from OFBA client or embedded browser.
-                                 * Return 403 Forbidden with OFBA headers to summon the embedded browser
-                                 * and point it to the login hook.
-                                 */
-                                const char *current_url = oidc_util_url_cur(r, oidc_cfg_x_forwarded_headers_get(c));
-                                const char *request_url = apr_pstrcat(r->pool, current_url, r->args ? "&" : "?", "ofba=login", NULL);
-                                const char *return_url = apr_pstrcat(r->pool, current_url, r->args ? "&" : "?", "ofba=success", NULL);
+		/* MS-OFBA native integration */
+		if (oidc_is_ofba_capable_request(r)) {
+				if (r->args != NULL && strstr(r->args, "ofba=login") != NULL) {
+						/* This is the embedded browser accessing the login trigger URL;
+							* allow it to fall through to oidc_request_authenticate_user
+							*/
+				} else {
+						/* Unauthenticated request from OFBA client or embedded browser.
+							* Return 403 Forbidden with OFBA headers to summon the embedded browser
+							* and point it to the login hook.
+							*/
+						const char *current_url = oidc_util_url_cur(r, oidc_cfg_x_forwarded_headers_get(c));
+						const char *request_url = apr_pstrcat(r->pool, current_url, r->args ? "&" : "?", "ofba=login", NULL);
+						const char *return_url = apr_pstrcat(r->pool, current_url, r->args ? "&" : "?", "ofba=success", NULL);
 
-                                apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Required", request_url);
-                                apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Return_Url", return_url);
-                                apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Dialog_Size", "800x600");
-								apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Accepted_Protocols", "https");
-								apr_table_set(r->err_headers_out, "X-MS-InvokeApp", "1; RequireReadOnly");
+						apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Required", request_url);
+						apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Return_Url", return_url);
+						apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Dialog_Size", "800x600");
+						apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Accepted_Protocols", "https");
+						apr_table_set(r->err_headers_out, "X-MS-InvokeApp", "1; RequireReadOnly");
 
-                                return HTTP_FORBIDDEN;
-                        }
-                } else if ((oidc_cfg_dir_unauth_expr_is_set(r) == FALSE) && (oidc_is_auth_capable_request(r) == FALSE)) {
-                        /*
-                         * exception handling: if this looks like a XMLHttpRequest call we
-                         * won't redirect the user and thus avoid creating a state cookie
-                         * for a non-browser (= Javascript) call that will never return from the OP
-                         */
-                        return HTTP_UNAUTHORIZED;
-                }
+						return HTTP_FORBIDDEN;
+				}
+		} else if ((oidc_cfg_dir_unauth_expr_is_set(r) == FALSE) && (oidc_is_auth_capable_request(r) == FALSE)) {
+				/*
+					* exception handling: if this looks like a XMLHttpRequest call we
+					* won't redirect the user and thus avoid creating a state cookie
+					* for a non-browser (= Javascript) call that will never return from the OP
+					*/
+				return HTTP_UNAUTHORIZED;
+		}
+	}
 
         /*
          * else: no session (regardless of whether it is main or sub-request),
