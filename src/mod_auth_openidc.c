@@ -518,7 +518,7 @@ static int oidc_handle_unauthenticated_user(request_rec *r, oidc_cfg_t *c) {
 
 		/* MS-OFBA native integration */
 		if (oidc_is_ofba_capable_request(r)) {
-				if (r->args != NULL && strstr(r->args, "ofba=login") != NULL) {
+				if (r->uri != NULL && strstr(r->uri, "/dologin/") != NULL) {
 						/* This is the embedded browser accessing the login trigger URL;
 							* allow it to fall through to oidc_request_authenticate_user
 							*/
@@ -527,9 +527,8 @@ static int oidc_handle_unauthenticated_user(request_rec *r, oidc_cfg_t *c) {
 							* Return 403 Forbidden with OFBA headers to summon the embedded browser
 							* and point it to the login hook.
 							*/
-						const char *current_url = oidc_util_url_cur(r, oidc_cfg_x_forwarded_headers_get(c));
-						const char *request_url = apr_pstrcat(r->pool, current_url, r->args ? "&" : "?", "ofba=login", NULL);
-						const char *return_url = apr_pstrcat(r->pool, current_url, r->args ? "&" : "?", "ofba=success", NULL);
+						const char *return_url = oidc_util_url_abs(r, c, "/login_success/");
+						const char *request_url = apr_pstrcat(r->pool, oidc_util_url_abs(r, c, "/dologin/"), "?version=1.0&action=signin&returnurl=", apr_pescape_urlencoded(r->pool, return_url), NULL);
 
 						apr_table_set(r->err_headers_out, "X-FORMS_BASED_AUTH_REQUIRED", request_url);
 						apr_table_set(r->err_headers_out, "X-FORMS_BASED_AUTH_RETURN_URL", return_url);
@@ -1344,14 +1343,10 @@ static int oidc_check_userid_openidc(request_rec *r, oidc_cfg_t *c) {
 			OIDC_METRICS_TIMING_ADD(r, c, OM_SESSION_VALID);
 
 			/* MS-OFBA native integration */
-			if (r->args != NULL && strstr(r->args, "ofba=login") != NULL) {
-					char *current_url = oidc_util_url_cur(r, oidc_cfg_x_forwarded_headers_get(c));
-					char *ptr = strstr(current_url, "ofba=login");
-					if (ptr != NULL) {
-							char *return_url = apr_pstrcat(r->pool, apr_pstrmemdup(r->pool, current_url, ptr - current_url), "ofba=success", ptr + 10, NULL);
-							apr_table_setn(r->err_headers_out, "Location", return_url);
-							return HTTP_MOVED_TEMPORARILY;
-					}
+			if (r->uri != NULL && strstr(r->uri, "/dologin/") != NULL) {
+					char *return_url = (char *)oidc_util_url_abs(r, c, "/login_success/");
+					apr_table_setn(r->err_headers_out, "Location", return_url);
+					return HTTP_MOVED_TEMPORARILY;
 			}
 		} else {
 			OIDC_METRICS_COUNTER_INC(r, c, OM_SESSION_ERROR_GENERAL);
