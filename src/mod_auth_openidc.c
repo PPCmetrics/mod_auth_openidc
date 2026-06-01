@@ -531,10 +531,10 @@ static int oidc_handle_unauthenticated_user(request_rec *r, oidc_cfg_t *c) {
 						const char *request_url = apr_pstrcat(r->pool, current_url, r->args ? "&" : "?", "ofba=login", NULL);
 						const char *return_url = apr_pstrcat(r->pool, current_url, r->args ? "&" : "?", "ofba=success", NULL);
 
-						apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Required", request_url);
-						apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Return_Url", return_url);
-						apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Dialog_Size", "800x600");
-						apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Accepted_Protocols", "https");
+						apr_table_set(r->err_headers_out, "X-FORMS_BASED_AUTH_REQUIRED", request_url);
+						apr_table_set(r->err_headers_out, "X-FORMS_BASED_AUTH_RETURN_URL", return_url);
+						apr_table_set(r->err_headers_out, "X-FORMS_BASED_AUTH_DIALOG_SIZE", "800x600");
+						apr_table_set(r->err_headers_out, "X-FORMS_BASED_AUTH_ACCEPTED_PROTOCOLS", "https");
 						apr_table_set(r->err_headers_out, "X-MS-InvokeApp", "1; RequireReadOnly");
 
 						return HTTP_FORBIDDEN;
