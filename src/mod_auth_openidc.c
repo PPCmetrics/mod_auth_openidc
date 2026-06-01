@@ -450,6 +450,22 @@ void oidc_log_session_expires(request_rec *r, const char *msg, apr_time_t sessio
 }
 
 /*
+ * see if this is an MS-OFBA capable client
+ */
+apr_byte_t oidc_is_ofba_capable_request(request_rec *r) {
+        const char *user_agent = apr_table_get(r->headers_in, "User-Agent");
+        if (user_agent == NULL)
+                return FALSE;
+        if (strstr(user_agent, "Microsoft Data Access Internet Publishing Provider") != NULL) return TRUE;
+        if (strstr(user_agent, "MSOffice ") != NULL) return TRUE;
+        if (strstr(user_agent, "Microsoft Office ") != NULL) return TRUE;
+        if (strstr(user_agent, "Microsoft Office Protocol Discovery") != NULL) return TRUE;
+        if (strstr(user_agent, "non-browser") != NULL) return TRUE;
+        if (strstr(user_agent, "FrontPage") != NULL) return TRUE;
+        return FALSE;
+}
+
+/*
  * see if this is a request that is capable of completing an authentication round trip to the Provider
  */
 apr_byte_t oidc_is_auth_capable_request(request_rec *r) {
@@ -507,6 +523,29 @@ static int oidc_handle_unauthenticated_user(request_rec *r, oidc_cfg_t *c) {
 		 */
 		if ((oidc_cfg_dir_unauth_expr_is_set(r) == FALSE) && (oidc_is_auth_capable_request(r) == FALSE))
 			return HTTP_UNAUTHORIZED;
+
+		/* MS-OFBA native integration */
+		if (oidc_is_ofba_capable_request(r)) {
+				if (r->args != NULL && strstr(r->args, "ofba=login") != NULL) {
+						/* This is the embedded browser accessing the login trigger URL; 
+							* allow it to fall through to oidc_request_authenticate_user 
+							*/
+				} else {
+						/* Unauthenticated request from OFBA client or embedded browser.
+							* Return 403 Forbidden with OFBA headers to summon the embedded browser
+							* and point it to the login hook.
+							*/
+						const char *current_url = oidc_util_url_cur(r, oidc_cfg_x_forwarded_headers_get(c));
+						const char *request_url = apr_pstrcat(r->pool, current_url, r->args ? "&" : "?", "ofba=login", NULL);
+						const char *return_url = apr_pstrcat(r->pool, current_url, r->args ? "&" : "?", "ofba=success", NULL);
+						
+						apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Required", request_url);
+						apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Return_Url", return_url);
+						apr_table_set(r->err_headers_out, "X-Forms_Based_Auth_Dialog_Size", "800x600");
+						
+						return HTTP_FORBIDDEN;
+				}
+		}
 	}
 
 	/*
@@ -1302,6 +1341,17 @@ static int oidc_check_userid_openidc(request_rec *r, oidc_cfg_t *c) {
 
 		if (rc == OK) {
 			OIDC_METRICS_TIMING_ADD(r, c, OM_SESSION_VALID);
+
+			/* MS-OFBA native integration */
+			if (r->args != NULL && strstr(r->args, "ofba=login") != NULL) {
+					char *current_url = oidc_util_url_cur(r, oidc_cfg_x_forwarded_headers_get(c));
+					char *ptr = strstr(current_url, "ofba=login");
+					if (ptr != NULL) {
+							char *return_url = apr_pstrcat(r->pool, apr_pstrmemdup(r->pool, current_url, ptr - current_url), "ofba=success", ptr + 10, NULL);
+							apr_table_setn(r->err_headers_out, "Location", return_url);
+							return HTTP_MOVED_TEMPORARILY;
+					}
+			}
 		} else {
 			OIDC_METRICS_COUNTER_INC(r, c, OM_SESSION_ERROR_GENERAL);
 		}
