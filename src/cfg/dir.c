@@ -76,6 +76,10 @@ struct oidc_dir_cfg_t {
 	char *state_cookie_prefix;
 	apr_array_header_t *pass_userinfo_as;
 	int pass_idtoken_as;
+
+	int ofba_enable;
+	char *ofba_auth_request_url;
+	char *ofba_auth_success_url;
 };
 
 #define OIDC_PASS_ID_TOKEN_AS_CLAIMS_STR "claims"
@@ -604,6 +608,16 @@ const char *oidc_cfg_dir_path_scope_get(request_rec *r) {
 	return oidc_util_apr_expr_exec(r, dir_cfg->path_scope_expr, TRUE);
 }
 
+#define OIDC_DEFAULT_OFBA_ENABLE 0
+OIDC_CFG_DIR_MEMBER_FUNCS_INT(ofba_enable, apr_byte_t, oidc_cfg_parse_boolean(cmd->pool, arg, &v),
+			      OIDC_DEFAULT_OFBA_ENABLE)
+
+#define OIDC_DEFAULT_OFBA_AUTH_REQUEST_URL "/dologin/"
+OIDC_CFG_DIR_MEMBER_FUNC_STR(ofba_auth_request_url, const char *, OIDC_DEFAULT_OFBA_AUTH_REQUEST_URL)
+
+#define OIDC_DEFAULT_OFBA_AUTH_SUCCESS_URL "/login_success/"
+OIDC_CFG_DIR_MEMBER_FUNC_STR(ofba_auth_success_url, const char *, OIDC_DEFAULT_OFBA_AUTH_SUCCESS_URL)
+
 /*
  * create a new directory config record with defaults
  */
@@ -635,6 +649,9 @@ void *oidc_cfg_dir_config_create(apr_pool_t *pool, char *path) {
 	c->state_cookie_prefix = NULL;
 	c->pass_userinfo_as = NULL;
 	c->pass_idtoken_as = OIDC_CONFIG_POS_INT_UNSET;
+	c->ofba_enable = OIDC_CONFIG_POS_INT_UNSET;
+	c->ofba_auth_request_url = NULL;
+	c->ofba_auth_success_url = NULL;
 	return (c);
 }
 
@@ -694,6 +711,10 @@ void *oidc_cfg_dir_config_merge(apr_pool_t *pool, void *BASE, void *ADD) {
 
 	c->state_cookie_prefix =
 	    add->state_cookie_prefix != NULL ? add->state_cookie_prefix : base->state_cookie_prefix;
+
+	c->ofba_enable = add->ofba_enable != OIDC_CONFIG_POS_INT_UNSET ? add->ofba_enable : base->ofba_enable;
+	c->ofba_auth_request_url = add->ofba_auth_request_url != NULL ? add->ofba_auth_request_url : base->ofba_auth_request_url;
+	c->ofba_auth_success_url = add->ofba_auth_success_url != NULL ? add->ofba_auth_success_url : base->ofba_auth_success_url;
 
 	return (c);
 }

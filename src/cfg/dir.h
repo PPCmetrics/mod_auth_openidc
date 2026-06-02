@@ -149,6 +149,9 @@ OIDC_CFG_DIR_MEMBER_FUNCS(pass_refresh_token, apr_byte_t)
 OIDC_CFG_DIR_MEMBER_FUNCS(discover_url, const char *)
 OIDC_CFG_DIR_MEMBER_FUNCS(state_cookie_prefix, const char *)
 OIDC_CFG_DIR_MEMBER_FUNCS(pass_idtoken_as, oidc_pass_idtoken_as_t)
+OIDC_CFG_DIR_MEMBER_FUNCS(ofba_enable, apr_byte_t)
+OIDC_CFG_DIR_MEMBER_FUNCS(ofba_auth_request_url, const char *)
+OIDC_CFG_DIR_MEMBER_FUNCS(ofba_auth_success_url, const char *)
 
 // 2 args
 OIDC_CFG_DIR_MEMBER_FUNCS(unautz_action, oidc_unautz_action_t, const char *)

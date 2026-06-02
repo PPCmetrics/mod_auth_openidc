@@ -756,6 +756,21 @@ const command_rec oidc_cfg_cmds[] = {
 		pass_claims_as,
 		"Specify how claims are passed to the application(s); must be one of: none | headers | environment | both."),
 	OIDC_CFG_CMD_DIR(
+		AP_INIT_FLAG,
+		AuthOFBAenable,
+		ofba_enable,
+		"Enable mod_auth_ofba compatibility mode for MS-OFBA clients."),
+	OIDC_CFG_CMD_DIR(
+		AP_INIT_TAKE1,
+		AuthOFBAauthRequestURL,
+		ofba_auth_request_url,
+		"URL or location path for authentication of OFBA-capable clients."),
+	OIDC_CFG_CMD_DIR(
+		AP_INIT_TAKE1,
+		AuthOFBAauthSuccessURL,
+		ofba_auth_success_url,
+		"URL or location path reached on authentication success for OFBA-capable clients."),
+	OIDC_CFG_CMD_DIR(
 		AP_INIT_ITERATE,
 		OIDCOAuthAcceptTokenAs,
 		accept_oauth_token_in,

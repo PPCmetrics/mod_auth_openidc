@@ -454,6 +454,8 @@ void oidc_log_session_expires(request_rec *r, const char *msg, apr_time_t sessio
  * see if this is an MS-OFBA capable client
  */
 apr_byte_t oidc_is_ofba_capable_request(request_rec *r) {
+        if (!oidc_cfg_dir_ofba_enable_get(r))
+                return FALSE;
         const char *user_agent = apr_table_get(r->headers_in, "User-Agent");
         if (user_agent == NULL)
                 return FALSE;
@@ -519,7 +521,9 @@ static int oidc_handle_unauthenticated_user(request_rec *r, oidc_cfg_t *c) {
 
 		/* MS-OFBA native integration */
 		if (oidc_is_ofba_capable_request(r)) {
-				if (r->uri != NULL && strstr(r->uri, "/dologin/") != NULL) {
+				const char *ofba_req_url = oidc_cfg_dir_ofba_auth_request_url_get(r);
+				const char *ofba_succ_url = oidc_cfg_dir_ofba_auth_success_url_get(r);
+				if (r->uri != NULL && strstr(r->uri, ofba_req_url) != NULL) {
 						/* This is the embedded browser accessing the login trigger URL;
 							* allow it to fall through to oidc_request_authenticate_user
 							*/
@@ -528,8 +532,8 @@ static int oidc_handle_unauthenticated_user(request_rec *r, oidc_cfg_t *c) {
 							* Return 403 Forbidden with OFBA headers to summon the embedded browser
 							* and point it to the login hook.
 							*/
-						const char *return_url = oidc_util_url_abs(r, c, "/login_success/");
-						const char *request_url = apr_pstrcat(r->pool, oidc_util_url_abs(r, c, "/dologin/"), "?version=1.0&action=signin&returnurl=", apr_pescape_urlencoded(r->pool, return_url), NULL);
+						const char *return_url = oidc_util_url_abs(r, c, ofba_succ_url);
+						const char *request_url = apr_pstrcat(r->pool, oidc_util_url_abs(r, c, ofba_req_url), "?version=1.0&action=signin&returnurl=", apr_pescape_urlencoded(r->pool, return_url), NULL);
 
 						apr_table_set(r->err_headers_out, "X-FORMS_BASED_AUTH_REQUIRED", request_url);
 						apr_table_set(r->err_headers_out, "X-FORMS_BASED_AUTH_RETURN_URL", return_url);
@@ -1344,8 +1348,10 @@ static int oidc_check_userid_openidc(request_rec *r, oidc_cfg_t *c) {
 			OIDC_METRICS_TIMING_ADD(r, c, OM_SESSION_VALID);
 
 			/* MS-OFBA native integration */
-			if (r->uri != NULL && strstr(r->uri, "/dologin/") != NULL) {
-					char *return_url = (char *)oidc_util_url_abs(r, c, "/login_success/");
+			const char *ofba_req_url = oidc_cfg_dir_ofba_auth_request_url_get(r);
+			if (r->uri != NULL && strstr(r->uri, ofba_req_url) != NULL && oidc_is_ofba_capable_request(r)) {
+					const char *ofba_succ_url = oidc_cfg_dir_ofba_auth_success_url_get(r);
+					char *return_url = (char *)oidc_util_url_abs(r, c, ofba_succ_url);
 					apr_table_setn(r->err_headers_out, "Location", return_url);
 					return HTTP_MOVED_TEMPORARILY;
 			}
