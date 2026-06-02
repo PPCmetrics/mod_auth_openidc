@@ -67,6 +67,10 @@
 #define OIDCUserInfoClaimsExpr "OIDCUserInfoClaimsExpr"
 #define OIDCCookiePath "OIDCCookiePath"
 
+#define AuthOFBAenable "AuthOFBAenable"
+#define AuthOFBAauthRequestURL "AuthOFBAauthRequestURL"
+#define AuthOFBAauthSuccessURL "AuthOFBAauthSuccessURL"
+
 typedef enum {
 	/* pass id_token as individual claims in headers (default) */
 	OIDC_PASS_IDTOKEN_AS_CLAIMS = 1,
