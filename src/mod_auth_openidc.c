@@ -1349,7 +1349,7 @@ static int oidc_check_userid_openidc(request_rec *r, oidc_cfg_t *c) {
 
 			/* MS-OFBA native integration */
 			const char *ofba_req_url = oidc_cfg_dir_ofba_auth_request_url_get(r);
-			if (r->uri != NULL && strstr(r->uri, ofba_req_url) != NULL && oidc_is_ofba_capable_request(r)) {
+			if (r->uri != NULL && strstr(r->uri, ofba_req_url) != NULL && oidc_cfg_dir_ofba_enable_get(r)) {
 					const char *ofba_succ_url = oidc_cfg_dir_ofba_auth_success_url_get(r);
 					char *return_url = (char *)oidc_util_url_abs(r, c, ofba_succ_url);
 					apr_table_setn(r->err_headers_out, "Location", return_url);
